@@ -9,7 +9,6 @@ from typing import TypedDict, Optional
 import csv, json
 from dotenv import load_dotenv
 
-# --- Config ---
 GEMINI_KEY = os.getenv("GEMINI_API_KEY")
 genai.configure(api_key=GEMINI_KEY)
 
@@ -25,10 +24,9 @@ os.makedirs(VOICE_DIR, exist_ok=True)
 os.makedirs(TRANSCRIPT_DIR, exist_ok=True)
 os.makedirs(os.path.dirname(CSV_PATH), exist_ok=True)
 
-model = whisper.load_model("base")  # options: tiny, base, small, medium, large
+model = whisper.load_model("base") 
 print("[✓] Whisper model loaded")
 
-# --- Step 1: Save Audio ---
 async def save_audio(state):
     print("[→] save_audio() starting...")
     file_path = state["file_path"]
@@ -47,7 +45,6 @@ async def save_audio(state):
         print(f"[×] Exception in save_audio: {e}")
     return state
 
-# --- Step 2: Transcribe ---
 async def transcribe_audio(state):
     print("[→] transcribe_audio() starting...")
     audio_path = state["file_path"]
@@ -66,7 +63,6 @@ async def transcribe_audio(state):
         print(f"[×] Exception in transcribe_audio: {e}")
     return state
 
-# --- Step 3: Gemini call ---
 async def query_gemini(state):
     print("[→] query_gemini() starting...")
     prompt = f"""You are an expert analyst who, when given a transcript of a conversation, can perfectly extract the necessary details and fields with utmost accuracy, based off a pre-provided set of requirements/templates. 
@@ -116,13 +112,10 @@ async def store_information(state):
         print("❌ Failed to parse Gemini JSON:", gemini_response)
         return state
 
-    # Normalize keys to lowercase
     normalized = {k.lower(): v for k, v in data.items()}
 
-    # Ensure consistent column order
     fieldnames = sorted(normalized.keys())
 
-    # Create CSV file if not exists (with header) or append
     file_exists = os.path.exists(CSV_PATH)
     with open(CSV_PATH, "a", newline="", encoding="utf-8") as fp:
         writer = csv.DictWriter(fp, fieldnames=fieldnames)
@@ -133,7 +126,6 @@ async def store_information(state):
     print(f"✱ Stored row in {CSV_PATH}: {normalized}")
     return state
 
-# --- LangGraph schema ---
 class State(TypedDict):
     media_url: str
     file_path: str
@@ -158,7 +150,6 @@ graph.set_finish_point("store_information")
 
 flow = graph.compile()
 
-# --- FastAPI endpoint ---
 @app.post("/whatsapp")
 async def whatsapp_webhook(request: Request):
     print("[→] Incoming WhatsApp request...")
